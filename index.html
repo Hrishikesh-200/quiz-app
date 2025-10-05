@@ -191,8 +191,11 @@
       const btns = quizEl.querySelectorAll('.option-btn');
       btns.forEach((btn, i) => {
         btn.disabled = true;
-        if (i === q.answer) btn.classList.add('correct');
-        if (i === idx && idx !== q.answer) btn.classList.add('incorrect');
+        if (i === q.answer) {
+          btn.classList.add('correct');
+        } else {
+          btn.classList.add('incorrect');
+        }
       });
       if (idx === q.answer) score++;
       quizEl.querySelector('#next').disabled = false;
