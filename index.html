@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Chemistry Quiz</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      --primary: #1976d2;
+      --correct: #43a047;
+      --incorrect: #e53935;
+      --bg: #f5f5f5;
+      --card: #fff;
+      --border: #ddd;
+      --radius: 10px;
+      --transition: 0.2s;
+    }
+    body {
+      background: var(--bg);
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .quiz-container {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      max-width: 400px;
+      width: 100%;
+      padding: 2rem 1.5rem;
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .question {
+      font-size: 1.2rem;
+      font-weight: 500;
+      margin-bottom: 1rem;
+    }
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .option-btn {
+      background: #fafafa;
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background var(--transition), border-color var(--transition), color var(--transition);
+      text-align: left;
+      outline: none;
+      position: relative;
+    }
+    .option-btn:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px #1976d233;
+    }
+    .option-btn.correct {
+      background: #e8f5e9;
+      border-color: var(--correct);
+      color: var(--correct);
+    }
+    .option-btn.incorrect {
+      background: #ffebee;
+      border-color: var(--incorrect);
+      color: var(--incorrect);
+    }
+    .next-btn, .retake-btn {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background var(--transition);
+      margin-top: 1rem;
+      align-self: flex-end;
+    }
+    .next-btn:disabled {
+      background: #bdbdbd;
+      cursor: not-allowed;
+    }
+    .score {
+      font-size: 1.3rem;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 500px) {
+      .quiz-container {
+        padding: 1rem 0.5rem;
+        max-width: 98vw;
+      }
+      .question {
+        font-size: 1rem;
+      }
+      .option-btn {
+        font-size: 0.95rem;
+        padding: 0.6rem 0.7rem;
+      }
+      .next-btn, .retake-btn {
+        font-size: 0.95rem;
+        padding: 0.6rem 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="quiz-container" id="quiz" aria-live="polite">
+      <!-- Quiz content will be injected here -->
+    </section>
+  </main>
+  <script>
+    const questions = [
+      {
+        question: "Which metal is liquid at room temperature?",
+        options: ["Mercury", "Sodium", "Aluminium", "Copper", "Lead"],
+        answer: 0
+      },
+      {
+        question: "Which element is a noble gas?",
+        options: ["Helium", "Oxygen", "Nitrogen", "Chlorine", "Fluorine"],
+        answer: 0
+      },
+      {
+        question: "Which element is used to make computer chips?",
+        options: ["Silicon", "Copper", "Gold", "Mercury", "Argon"],
+        answer: 0
+      },
+      {
+        question: "Which common household chemical is baking soda?",
+        options: ["Sodium bicarbonate", "Sodium chloride", "Calcium carbonate", "Potassium hydroxide", "Magnesium sulfate"],
+        answer: 0
+      },
+      {
+        question: "Which metal is known for being highly conductive and often used in wiring?",
+        options: ["Copper", "Iron", "Lead", "Silver (rare)", "Aluminium"],
+        answer: 0
+      }
+    ];
+
+    let current = 0;
+    let score = 0;
+    let selected = null;
+    const quizEl = document.getElementById('quiz');
+
+    function renderQuestion() {
+      const q = questions[current];
+      quizEl.innerHTML = `
+        <div class="question" id="question" tabindex="0">${q.question}</div>
+        <div class="options" role="list">
+          ${q.options.map((opt, i) => `
+            <button class="option-btn" role="listitem" aria-label="${opt}" data-index="${i}" tabindex="0">${opt}</button>
+          `).join('')}
+        </div>
+        <button class="next-btn" id="next" disabled>Next</button>
+      `;
+      selected = null;
+      // Accessibility: focus first option
+      setTimeout(() => {
+        const firstBtn = quizEl.querySelector('.option-btn');
+        if (firstBtn) firstBtn.focus();
+      }, 100);
+      // Option click handler
+      quizEl.querySelectorAll('.option-btn').forEach(btn => {
+        btn.addEventListener('click', optionHandler);
+        btn.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            btn.click();
+          }
+        });
+      });
+      quizEl.querySelector('#next').addEventListener('click', nextHandler);
+    }
+
+    function optionHandler(e) {
+      if (selected !== null) return;
+      const idx = Number(e.currentTarget.dataset.index);
+      selected = idx;
+      const q = questions[current];
+      const btns = quizEl.querySelectorAll('.option-btn');
+      btns.forEach((btn, i) => {
+        btn.disabled = true;
+        if (i === q.answer) btn.classList.add('correct');
+        if (i === idx && idx !== q.answer) btn.classList.add('incorrect');
+      });
+      if (idx === q.answer) score++;
+      quizEl.querySelector('#next').disabled = false;
+    }
+
+    function nextHandler() {
+      current++;
+      if (current < questions.length) {
+        renderQuestion();
+      } else {
+        renderScore();
+      }
+    }
+
+    function renderScore() {
+      quizEl.innerHTML = `
+        <div class="score" tabindex="0" aria-live="assertive">
+          You scored ${score} out of ${questions.length}!
+        </div>
+        <button class="retake-btn" id="retake">Retake Quiz</button>
+      `;
+      document.getElementById('retake').addEventListener('click', retakeHandler);
+      setTimeout(() => {
+        quizEl.querySelector('.score').focus();
+      }, 100);
+    }
+
+    function retakeHandler() {
+      current = 0;
+      score = 0;
+      renderQuestion();
+    }
+
+    // Initial render
+    renderQuestion();
+  </script>
+</body>
+</html>
